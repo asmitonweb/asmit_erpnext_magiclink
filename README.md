@@ -73,3 +73,7 @@ Used by external apps to validate the token and get user details.
 ## License
 
 MIT
+
+## System Design
+
+View the [System Design](system_design.md) to understand the authentication flow.
