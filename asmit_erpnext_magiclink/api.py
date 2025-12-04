@@ -31,16 +31,20 @@ def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
                 "first_name": name,
                 "enabled": 1,
                 "user_type": "Website User",
-                "send_welcome_email": 0
+                "send_welcome_email": 0,
+                "mobile_no": mobile_number
             })
             user_doc.insert(ignore_permissions=True)
             user = user_doc.name
         else:
             frappe.throw(_("User not found and name not provided for creation"))
-
-    # Update/Create Contact if mobile number is provided
-    if mobile_number:
-        _update_user_contact(user, mobile_number)
+    else:
+        # Update mobile number for existing user if provided
+        if mobile_number:
+            user_doc = frappe.get_doc("User", user)
+            if user_doc.mobile_no != mobile_number:
+                user_doc.mobile_no = mobile_number
+                user_doc.save(ignore_permissions=True)
 
     # Generate secure token
     token = secrets.token_urlsafe(32)
@@ -59,76 +63,6 @@ def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
         url = get_url(f"/api/method/asmit_erpnext_magiclink.api.login_via_token?token={token}")
     
     return url
-
-def _update_user_contact(user_name, mobile_number):
-    """
-    Ensures a Contact exists for the user with the given mobile number.
-    """
-    try:
-        user_doc = frappe.get_doc("User", user_name)
-        email = user_doc.email
-
-        # 1. Try to find by link
-        contact_name = frappe.db.get_value("Dynamic Link", {
-            "link_doctype": "User", 
-            "link_name": user_name, 
-            "parenttype": "Contact"
-        }, "parent")
-
-        # 2. If not found, try to find by email
-        if not contact_name:
-            contact_name = frappe.db.get_value("Contact", {"email_id": email}, "name")
-
-        contact = None
-        if contact_name:
-            contact = frappe.get_doc("Contact", contact_name)
-            
-            # Ensure link exists if we found it by email but link was missing
-            link_exists = False
-            for link in contact.get("links", []):
-                if link.link_doctype == "User" and link.link_name == user_name:
-                    link_exists = True
-                    break
-            
-            if not link_exists:
-                contact.append("links", {
-                    "link_doctype": "User",
-                    "link_name": user_name
-                })
-        else:
-            contact = frappe.new_doc("Contact")
-            contact.name = f"{user_doc.first_name}-{email}"
-            contact.first_name = user_doc.first_name
-            contact.last_name = user_doc.last_name
-            contact.email_id = email
-            contact.is_primary_contact = 1
-            contact.append("links", {
-                "link_doctype": "User",
-                "link_name": user_name
-            })
-
-        # Update mobile number in main field
-        if contact.mobile_no != mobile_number:
-            contact.mobile_no = mobile_number
-
-        # Update mobile number in child table (phone_nos)
-        # This is required if the child table is mandatory
-        found_in_table = False
-        for row in contact.get("phone_nos", []):
-            if row.phone == mobile_number:
-                found_in_table = True
-                break
-        
-        if not found_in_table:
-            contact.append("phone_nos", {
-                "phone": mobile_number,
-                "is_primary_mobile_no": 1
-            })
-
-        contact.save(ignore_permissions=True)
-
-    except Exception as e:
-        frappe.log_error(message=f"Error updating contact for user {user_name}: {str(e)}", title="Magic Link Contact Error")
 
 
 @frappe.whitelist(allow_guest=True)
