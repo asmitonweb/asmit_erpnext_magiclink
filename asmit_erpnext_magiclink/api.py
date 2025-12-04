@@ -8,7 +8,7 @@ except ImportError:
     _generate_jwt_token = None
 
 @frappe.whitelist(allow_guest=True)
-def generate_magic_link(email, name=None, redirect_to=None):
+def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
     """
     Generates a magic link for the given email.
     If the user does not exist and name is provided, creates a new Website User.
@@ -16,6 +16,7 @@ def generate_magic_link(email, name=None, redirect_to=None):
         email (str): User's email.
         name (str, optional): User's name for creation.
         redirect_to (str, optional): External URL to redirect to with the token.
+        mobile_number (str, optional): User's mobile number to save in Contact.
     """
     if not email:
         frappe.throw(_("Email is required"))
@@ -38,6 +39,10 @@ def generate_magic_link(email, name=None, redirect_to=None):
         else:
             frappe.throw(_("User not found and name not provided for creation"))
 
+    # Update/Create Contact if mobile number is provided
+    if mobile_number:
+        _update_user_contact(user, mobile_number)
+
     # Generate secure token
     token = secrets.token_urlsafe(32)
     
@@ -55,6 +60,42 @@ def generate_magic_link(email, name=None, redirect_to=None):
         url = get_url(f"/api/method/asmit_erpnext_magiclink.api.login_via_token?token={token}")
     
     return url
+
+def _update_user_contact(user_name, mobile_number):
+    """
+    Ensures a Contact exists for the user with the given mobile number.
+    """
+    try:
+        # Check if a contact is already linked to this user
+        contact_name = frappe.db.get_value("Dynamic Link", {
+            "link_doctype": "User", 
+            "link_name": user_name, 
+            "parenttype": "Contact"
+        }, "parent")
+
+        if contact_name:
+            # Update existing contact
+            contact = frappe.get_doc("Contact", contact_name)
+            if contact.mobile_no != mobile_number:
+                contact.mobile_no = mobile_number
+                contact.save(ignore_permissions=True)
+        else:
+            # Create new contact
+            user_doc = frappe.get_doc("User", user_name)
+            contact = frappe.new_doc("Contact")
+            contact.first_name = user_doc.first_name
+            contact.last_name = user_doc.last_name
+            contact.email_id = user_doc.email
+            contact.mobile_no = mobile_number
+            contact.is_primary_contact = 1
+            contact.append("links", {
+                "link_doctype": "User",
+                "link_name": user_name
+            })
+            contact.insert(ignore_permissions=True)
+    except Exception as e:
+        frappe.log_error(message=f"Error updating contact for user {user_name}: {str(e)}", title="Magic Link Contact Error")
+
 
 @frappe.whitelist(allow_guest=True)
 def login_via_token(token):
@@ -79,7 +120,7 @@ def login_via_token(token):
 
     # Redirect to shop or home
     frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = "/app"
+    frappe.local.response["location"] = "/all-products"
 
 @frappe.whitelist(allow_guest=True)
 def verify_token(token):
