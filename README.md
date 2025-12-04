@@ -14,7 +14,7 @@ A standalone Frappe app to generate secure, one-time-use magic login links for E
 
 1.  Get the app
     ```bash
-    bench get-app https://github.com/yourusername/asmit_erpnext_magiclink
+    bench get-app https://github.com/asmitonweb/asmit_erpnext_magiclink.git
     ```
 
 2.  Install the app
