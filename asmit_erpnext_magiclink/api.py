@@ -70,26 +70,41 @@ def _update_user_contact(user_name, mobile_number):
             "parenttype": "Contact"
         }, "parent")
 
+        contact = None
         if contact_name:
-            # Update existing contact
             contact = frappe.get_doc("Contact", contact_name)
-            if contact.mobile_no != mobile_number:
-                contact.mobile_no = mobile_number
-                contact.save(ignore_permissions=True)
         else:
-            # Create new contact
             user_doc = frappe.get_doc("User", user_name)
             contact = frappe.new_doc("Contact")
             contact.first_name = user_doc.first_name
             contact.last_name = user_doc.last_name
             contact.email_id = user_doc.email
-            contact.mobile_no = mobile_number
             contact.is_primary_contact = 1
             contact.append("links", {
                 "link_doctype": "User",
                 "link_name": user_name
             })
-            contact.insert(ignore_permissions=True)
+
+        # Update mobile number in main field
+        if contact.mobile_no != mobile_number:
+            contact.mobile_no = mobile_number
+
+        # Update mobile number in child table (phone_nos)
+        # This is required if the child table is mandatory
+        found_in_table = False
+        for row in contact.get("phone_nos", []):
+            if row.phone == mobile_number:
+                found_in_table = True
+                break
+        
+        if not found_in_table:
+            contact.append("phone_nos", {
+                "phone": mobile_number,
+                "is_primary_mobile_no": 1
+            })
+
+        contact.save(ignore_permissions=True)
+
     except Exception as e:
         frappe.log_error(message=f"Error updating contact for user {user_name}: {str(e)}", title="Magic Link Contact Error")
 
