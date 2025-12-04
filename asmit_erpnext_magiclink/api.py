@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import get_url
 import secrets
-from asmit_erpnext_magiclink.asmit_erpnext_magiclink.utils import generate_jwt_token
+from asmit_erpnext_magiclink.utils import generate_jwt_token
 
 @frappe.whitelist(allow_guest=True)
 def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
