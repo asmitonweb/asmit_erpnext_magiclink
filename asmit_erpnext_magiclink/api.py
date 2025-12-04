@@ -23,8 +23,10 @@ def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
     if not user:
         if name:
             # Create new user
+            user_id = f"{name}-{email}"
             user_doc = frappe.get_doc({
                 "doctype": "User",
+                "name": user_id,
                 "email": email,
                 "first_name": name,
                 "enabled": 1,
@@ -63,22 +65,42 @@ def _update_user_contact(user_name, mobile_number):
     Ensures a Contact exists for the user with the given mobile number.
     """
     try:
-        # Check if a contact is already linked to this user
+        user_doc = frappe.get_doc("User", user_name)
+        email = user_doc.email
+
+        # 1. Try to find by link
         contact_name = frappe.db.get_value("Dynamic Link", {
             "link_doctype": "User", 
             "link_name": user_name, 
             "parenttype": "Contact"
         }, "parent")
 
+        # 2. If not found, try to find by email
+        if not contact_name:
+            contact_name = frappe.db.get_value("Contact", {"email_id": email}, "name")
+
         contact = None
         if contact_name:
             contact = frappe.get_doc("Contact", contact_name)
+            
+            # Ensure link exists if we found it by email but link was missing
+            link_exists = False
+            for link in contact.get("links", []):
+                if link.link_doctype == "User" and link.link_name == user_name:
+                    link_exists = True
+                    break
+            
+            if not link_exists:
+                contact.append("links", {
+                    "link_doctype": "User",
+                    "link_name": user_name
+                })
         else:
-            user_doc = frappe.get_doc("User", user_name)
             contact = frappe.new_doc("Contact")
+            contact.name = f"{user_doc.first_name}-{email}"
             contact.first_name = user_doc.first_name
             contact.last_name = user_doc.last_name
-            contact.email_id = user_doc.email
+            contact.email_id = email
             contact.is_primary_contact = 1
             contact.append("links", {
                 "link_doctype": "User",
