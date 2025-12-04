@@ -1,6 +1,6 @@
 app_name = "asmit_erpnext_magiclink"
 app_title = "Asmit ERPNext Magic"
-app_publisher = "Asmit"
+app_publisher = "Asmit Anand Singh"
 app_description = "Generic Magic Link Login for ERPNext"
-app_email = "asmit@example.com"
+app_email = "asmitanandsingh@gmail.com"
 app_license = "MIT"
