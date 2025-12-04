@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import get_url
 import secrets
-
+from asmit_erpnext_magiclink.utils import generate_jwt_token
 
 @frappe.whitelist(allow_guest=True)
 def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
@@ -122,7 +122,7 @@ def login_via_token(token):
 @frappe.whitelist(allow_guest=True)
 def verify_token(token):
     """
-    Verifies the token and returns the user email.
+    Verifies the token and returns the user email and JWT access token.
     Used by external apps to validate the token.
     """
     if not token:
@@ -145,5 +145,11 @@ def verify_token(token):
         "email": user_doc.email,
         "full_name": user_doc.full_name
     }
+
+    # Generate JWT using local utility
+    jwt_token = generate_jwt_token(user_doc.email, user_doc.full_name)
+    if jwt_token:
+        response["access_token"] = jwt_token
+        response["token_type"] = "X-Authorization"
     
     return response

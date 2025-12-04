@@ -67,7 +67,9 @@ Used by external apps to validate the token and get user details.
     "status": "success",
     "user": "user_id",
     "email": "user@example.com",
-    "full_name": "User Name"
+    "full_name": "User Name",
+    "access_token": "jwt_token",
+    "token_type": "X-Authorization"
 }
 ```
 
