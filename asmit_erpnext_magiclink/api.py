@@ -2,10 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import get_url
 import secrets
-try:
-    from shopbridge.api.v1.auth_utils import _generate_jwt_token
-except ImportError:
-    _generate_jwt_token = None
+
 
 @frappe.whitelist(allow_guest=True)
 def generate_magic_link(email, name=None, redirect_to=None, mobile_number=None):
@@ -120,12 +117,12 @@ def login_via_token(token):
 
     # Redirect to shop or home
     frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = "/all-products"
+    frappe.local.response["location"] = "/app"
 
 @frappe.whitelist(allow_guest=True)
 def verify_token(token):
     """
-    Verifies the token and returns the user email and JWT access token.
+    Verifies the token and returns the user email.
     Used by external apps to validate the token.
     """
     if not token:
@@ -148,12 +145,5 @@ def verify_token(token):
         "email": user_doc.email,
         "full_name": user_doc.full_name
     }
-
-    # Generate JWT if shopbridge is available
-    if _generate_jwt_token:
-        jwt_token = _generate_jwt_token(user_doc.email, user_doc.full_name)
-        if jwt_token:
-            response["access_token"] = jwt_token
-            response["token_type"] = "X-Authorization"
     
     return response
