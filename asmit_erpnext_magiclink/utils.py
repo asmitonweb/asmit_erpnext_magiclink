@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 def _jwt_secret():
     """Get JWT secret from config"""
     conf = frappe.get_conf()
-    return conf.get("jwt_secret_key") or "ecom_api_default_secret_key_for_development_only"
+    return conf.get("jwt_secret_key") or conf.get("encryption_key") or "ecom_api_default_secret_key_for_development_only"
 
 def _jwt_algorithm():
     """Get JWT algorithm from config"""
