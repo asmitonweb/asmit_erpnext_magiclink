@@ -23,7 +23,7 @@ You can install this app using `bench get-app`.
     bench --site <your-site-name> install-app asmit_erpnext_magiclink
     ```
 
-3.  **Migrate**:
+3.  **Migrate** (Just build is fine in newer versions):
     ```bash
     bench --site <your-site-name> migrate
     ```
