@@ -4,6 +4,13 @@ from datetime import datetime, timedelta, timezone
 
 def _jwt_secret():
     """Get JWT secret from config"""
+    # Try to use Shopbridge's secret logic if available to ensure compatibility
+    try:
+        from shopbridge.api.v1.auth_utils import _jwt_secret as get_shopbridge_secret
+        return get_shopbridge_secret()
+    except ImportError:
+        pass
+
     conf = frappe.get_conf()
     return conf.get("jwt_secret_key") or conf.get("encryption_key") or "ecom_api_default_secret_key_for_development_only"
 

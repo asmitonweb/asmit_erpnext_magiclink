@@ -88,6 +88,23 @@ If you want to use a specific secret key for JWTs (e.g., to share with another a
 }
 ```
 
+## Production Deployment
+
+### 1. CORS Configuration
+If your frontend (e.g., `https://app.yoursite.com`) and backend (e.g., `https://api.yoursite.com`) are on different domains, you **must** enable CORS.
+
+**Security Tip**: In production, replace `*` with your actual frontend domain to restrict access.
+
+In `site_config.json`:
+```json
+{
+    "allow_cors": "https://app.yoursite.com"
+}
+```
+
+### 2. JWT Secret
+Ensure your site has a secure `encryption_key` (generated automatically by Frappe) or set a custom `jwt_secret_key` in `site_config.json`.
+
 ## License
 
 MIT
